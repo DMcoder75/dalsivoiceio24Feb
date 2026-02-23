@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "dalsi-voice-tts",
+  "private_key_id": "403fab19006082985fc20f671865c5db21a3841f",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCyLDpfMaOn5CEk\nAWy5bSwl44Gz8VJ4f5WtacUrLR+La1x+ZlLEYUxgvP3MVafJfXB5NiqxxKSNiD5s\nV10jx65+dv0W7EAJshBzGrutSDr4mjEpXCqoTZ3PTM70VurxrlZuZAvCGpr+eIdX\n3650mcMnezs9treYkl9fXP/i6vFPNILkKSbufAp+PmibUJxwZ89oHyWJr7nnTVdd\n2B0ZQymcJ4ptOwNgFNi0GrGc9vX9HvuSnm7Djyh+736SwG4uJ38eW2Iz58l+/XpN\nIqQkbIHm1Chzypy7U40LOqexmBgaDqtjpYD8sRciN7CdkJSWp/XlhmS7pmmohO+w\nt5bC2loZAgMBAAECggEAVlOylpP9COgyHHlqPe+E//iay95FiKe8lFCWnSRYT9td\nbcrTGF5SPN7lE39+89PIzpntlsNBvWeBY0nzEVZ7F8A8QUKHhosViEewHjXMiM5g\nunrzGie9Kgc7kMyaOi4vp33m6o2sglZQsUVqCAnGMhd1rSGeFBj7h7+OJdqSv75Q\nKE9aFILo6ZHC00frDW9jPPaATMRGlMeM3baZVowh6oqUFZR1YyjmcgMArY5CTXBF\n8dL89DCh2lgnzHN31AKHSvHXmtVRWU5hu+E3O2Y4LnCB/JOnACXMuRecpIadXyoW\nmA200cKOqtxFHbqgWrZNUAwkTVdqlUwgf0VUnxozrwKBgQDrgj72r9l53A0r+DKE\nO/Wk3riLLLWnirkJ72KODVZNmp5zoJc4ECvmfMo1rACUD1jrVRp70eM7ujYYo1L+\nKRNiHuewCII+RNKIMF3uuukZmYql0jVWrezxU+eIbVwEdvKQBPidV1NBJqEgnNd5\nYpzHx0NwBbeol2Au7z/aqwaUDwKBgQDBrN9D45sbr1L4NKkmq2HzremBVx12KG68\nZWnv1LloR/ppuprD0D19EgT/RLdSaFyD7DGLQ5HcGKFnenG4Z9YiJ17PidEM7/lx\nsWwBI3ljvdMUHX0K2IsR9r8ew/0czS+s8zqx0YL3ar6xGxeeHO2pGk+9VQxvdvRC\n1J3ZZTRnVwKBgEevAVM8+0koPaoghd/SEFb6o9lY5oH0q5Xmk20Bij9czNYND3o1\nEee6HCJyFEr80Ofwo3sEy9GmQEkHjX9nKUs4dPUT4fDqKdriPfUoV0M/hQAsF6gm\nkHR0QYk5IEULn5FOsg3SQrkV9P1kQAHmjioQ8OnsE5bxXIlssVbxr7LpAoGBAJgr\nX3BT0Ha8FhB2L8D2PwvaxPCepcNEmVzkwYtyNAq/Iv0XZKodX3J5SfvW3cKdxLLS\nTUsCWAP6RjaredZNn21OSav+uIXVtsOhhx6N5L59Uu8nDCwNX5dJq3hcvO54ONFG\negNkfeYvtIwqoS/VwtVumuBDhnW9nMU1kKBSaA4ZAoGBALmZm3AUMznW6gJkv8Hf\n0SnsamzCiVA6hVD/ctZ83QOMS+2jIrcomP5tl+6LlQ+7RVd0O+G2SvPIPO+V5TJS\nqYKkuh9OPHCPjMjc5bSBGjLO0G1pIHiJc3AXwkuw8vFydRsgVtEE1iOOYgtJu4Gt\ne9dmAM0BgUUNF25/aRbgpetF\n-----END PRIVATE KEY-----\n",
+  "client_email": "dalsi-voice-tts-963@dalsi-voice-tts.iam.gserviceaccount.com",
+  "client_id": "110309408739090593277",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/dalsi-voice-tts-963%40dalsi-voice-tts.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
