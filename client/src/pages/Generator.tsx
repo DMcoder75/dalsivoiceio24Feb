@@ -81,12 +81,28 @@ export default function Generator() {
 
     try {
       setIsGenerating(true);
+      // Get session token first if not exists
+      let sessionToken = localStorage.getItem("dalsi_session_token");
+      if (!sessionToken) {
+        const initResponse = await fetch("/api/trpc/voice.initSession", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ json: {} }),
+        });
+        const initData = await initResponse.json();
+        sessionToken = initData.result?.data?.sessionToken;
+        if (sessionToken) localStorage.setItem("dalsi_session_token", sessionToken);
+      }
+
       const response = await fetch("/api/trpc/voice.generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          json: { text, voiceProfileId: selectedVoiceId },
-          meta: { values: ["undefined"] },
+          json: { 
+            text, 
+            voiceProfileId: selectedVoiceId,
+            sessionToken: sessionToken || "default_session"
+          },
         }),
       });
 
@@ -98,7 +114,7 @@ export default function Generator() {
         setGenerationCount(prev => prev + 1);
         toast.success("Voice generated successfully!");
       } else {
-        throw new Error("No audio URL returned");
+        throw new Error(data.error?.message || "No audio URL returned");
       }
     } catch (error) {
       console.error("Generation error:", error);
