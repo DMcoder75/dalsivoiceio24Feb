@@ -14,7 +14,7 @@ const ttsClient = new TextToSpeechClient({
 });
 
 // Database connection
-const sql = postgres("postgresql://postgres:D@lveer@123@db.cdvrstytwgxxkqnmckdz.supabase.co:5432/postgres");
+const sql = postgres("postgresql://postgres:D%40lveer%40123@db.cdvrstytwgxxkqnmckdz.supabase.co:5432/postgres");
 
 const app = express();
 app.use(cors({ origin: true }));
