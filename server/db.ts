@@ -1,5 +1,6 @@
 import { eq, and, lt } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { InsertUser, users, voiceProfiles, userSessions, generationHistory, InsertUserSession, InsertGenerationHistory } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -9,7 +10,8 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const client = postgres(process.env.DATABASE_URL);
+      _db = drizzle(client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -68,9 +70,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
+    // Use PostgreSQL upsert syntax
+    await db.insert(users).values(values).onConflict((t) => ({
+      target: t.openId,
+      do: db.update(users).set(updateSet),
+    }));
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     throw error;
@@ -132,6 +136,7 @@ export async function createOrGetUserSession(userId: number): Promise<string | n
       userId,
       sessionToken,
       generationCount: 0,
+      remainingGenerations: 2,
       expiresAt,
     };
 
@@ -190,10 +195,9 @@ export async function incrementGenerationCount(sessionId: number) {
  */
 export async function createGenerationRecord(
   userId: number,
-  sessionId: number,
   voiceProfileId: number,
   text: string,
-  audioUrl?: string
+  audioUrl: string
 ) {
   const db = await getDb();
   if (!db) {
@@ -204,9 +208,8 @@ export async function createGenerationRecord(
   try {
     const record: InsertGenerationHistory = {
       userId,
-      sessionId,
       voiceProfileId,
-      text,
+      inputText: text,
       audioUrl,
       status: "completed",
       completedAt: new Date(),
@@ -239,66 +242,59 @@ export async function seedVoiceProfiles() {
     const profiles = [
       {
         name: "Alex - US Young",
-        accent: "US",
-        gender: "male" as const,
-        voiceType: "young",
-        avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-1_1771770678000_na1fn_YXZhdGFyLXVzLW1hbGUteW91bmcu.png",
+        languageCode: "en-US",
+        ssmlGender: "MALE",
         description: "Friendly and energetic young American voice",
         ttsVoiceId: "en-US-Neural2-A",
+        sampleAudioUrl: "https://example.com/samples/alex.mp3",
       },
       {
         name: "Emma - US Professional",
-        accent: "US",
-        gender: "female" as const,
-        voiceType: "professional",
-        avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-2_1771770682000_na1fn_YXZhdGFyLXVzLWZlbWFsZS1wcm9mZXNzaW9uYWw.png",
+        languageCode: "en-US",
+        ssmlGender: "FEMALE",
         description: "Professional and confident American voice",
         ttsVoiceId: "en-US-Neural2-C",
+        sampleAudioUrl: "https://example.com/samples/emma.mp3",
       },
       {
         name: "James - UK Mature",
-        accent: "UK",
-        gender: "male" as const,
-        voiceType: "mature",
-        avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-3_1771770681000_na1fn_YXZhdGFyLXVrLW1hbGUtbWF0dXJl.png",
+        languageCode: "en-GB",
+        ssmlGender: "MALE",
         description: "Sophisticated and distinguished British voice",
         ttsVoiceId: "en-GB-Neural2-A",
+        sampleAudioUrl: "https://example.com/samples/james.mp3",
       },
       {
         name: "Sophie - UK Casual",
-        accent: "UK",
-        gender: "female" as const,
-        voiceType: "casual",
-        avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-4_1771770682000_na1fn_YXZhdGFyLXVrLWZlbWFsZS1jYXN1YWw.png",
+        languageCode: "en-GB",
+        ssmlGender: "FEMALE",
         description: "Friendly and approachable British voice",
         ttsVoiceId: "en-GB-Neural2-B",
+        sampleAudioUrl: "https://example.com/samples/sophie.mp3",
       },
       {
         name: "Liam - Australian Casual",
-        accent: "Australian",
-        gender: "male" as const,
-        voiceType: "casual",
-        avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-5_1771770680000_na1fn_YXZhdGFyLWF1c3RyYWxpYW4tbWFsZS1jYXN1YWw.png",
+        languageCode: "en-AU",
+        ssmlGender: "MALE",
         description: "Relaxed and friendly Australian voice",
         ttsVoiceId: "en-AU-Neural2-A",
+        sampleAudioUrl: "https://example.com/samples/liam.mp3",
       },
       {
         name: "Priya - Indian Professional",
-        accent: "Indian",
-        gender: "female" as const,
-        voiceType: "professional",
-        avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/TC9UdSj0Guxl93g4Vj2L2q-img-1_1771770709000_na1fn_YXZhdGFyLWluZGlhbi1mZW1hbGUtcHJvZmVzc2lvbmFs.png",
+        languageCode: "en-IN",
+        ssmlGender: "FEMALE",
         description: "Professional and articulate Indian voice",
         ttsVoiceId: "en-IN-Neural2-A",
+        sampleAudioUrl: "https://example.com/samples/priya.mp3",
       },
       {
         name: "Casey - Non-binary Young",
-        accent: "US",
-        gender: "non-binary" as const,
-        voiceType: "young",
-        avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/TC9UdSj0Guxl93g4Vj2L2q-img-2_1771770709000_na1fn_YXZhdGFyLW5vbmJpbmFyeS15b3VuZw.png",
+        languageCode: "en-US",
+        ssmlGender: "NEUTRAL",
         description: "Contemporary and inclusive voice",
         ttsVoiceId: "en-US-Neural2-D",
+        sampleAudioUrl: "https://example.com/samples/casey.mp3",
       },
     ];
 

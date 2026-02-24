@@ -81,7 +81,6 @@ export const appRouter = router({
 
         await createGenerationRecord(
           ctx.user.id,
-          session.id,
           input.voiceProfileId,
           input.text,
           audioUrl

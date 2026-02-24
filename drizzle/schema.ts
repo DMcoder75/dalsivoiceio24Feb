@@ -1,25 +1,18 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { integer, text, timestamp, varchar, serial, pgTable, pgEnum } from "drizzle-orm/pg-core";
 
 /**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
+ * PostgreSQL schema matching Supabase database
  */
-export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
-  id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
   name: text("name"),
-  email: varchar("email", { length: 320 }),
+  openId: varchar("openId", { length: 64 }).unique(),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  role: varchar("role", { length: 20 }).default("user").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  lastSignedIn: timestamp("last_signed_in").defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -28,16 +21,15 @@ export type InsertUser = typeof users.$inferInsert;
 /**
  * Voice profiles with accents, genders, and voice types
  */
-export const voiceProfiles = mysqlTable("voiceProfiles", {
-  id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 128 }).notNull(),
-  accent: varchar("accent", { length: 64 }).notNull(), // US, UK, Australian, Indian, etc.
-  gender: mysqlEnum("gender", ["male", "female", "non-binary"]).notNull(),
-  voiceType: varchar("voiceType", { length: 64 }).notNull(), // young, mature, professional, casual
-  avatarUrl: text("avatarUrl").notNull(),
+export const voiceProfiles = pgTable("voice_profiles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
   description: text("description"),
-  ttsVoiceId: varchar("ttsVoiceId", { length: 128 }).notNull(), // External TTS provider voice ID
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  languageCode: varchar("language_code", { length: 64 }).notNull(),
+  ssmlGender: varchar("ssml_gender", { length: 64 }).notNull(),
+  sampleAudioUrl: text("sample_audio_url"),
+  ttsVoiceId: varchar("tts_voice_id", { length: 128 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export type VoiceProfile = typeof voiceProfiles.$inferSelect;
@@ -46,13 +38,14 @@ export type InsertVoiceProfile = typeof voiceProfiles.$inferInsert;
 /**
  * User sessions for tracking generation limits
  */
-export const userSessions = mysqlTable("userSessions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  sessionToken: varchar("sessionToken", { length: 256 }).notNull().unique(),
-  generationCount: int("generationCount").default(0).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  expiresAt: timestamp("expiresAt").notNull(),
+export const userSessions = pgTable("user_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  sessionToken: varchar("session_token", { length: 256 }).notNull().unique(),
+  generationCount: integer("generation_count").default(0).notNull(),
+  remainingGenerations: integer("remaining_generations").default(2).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
 });
 
 export type UserSession = typeof userSessions.$inferSelect;
@@ -61,18 +54,31 @@ export type InsertUserSession = typeof userSessions.$inferInsert;
 /**
  * Generation history for tracking user activity
  */
-export const generationHistory = mysqlTable("generationHistory", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  sessionId: int("sessionId").notNull(),
-  voiceProfileId: int("voiceProfileId").notNull(),
-  text: text("text").notNull(),
-  audioUrl: text("audioUrl"),
-  duration: int("duration"), // Duration in seconds
-  status: mysqlEnum("status", ["pending", "completed", "failed"]).default("pending").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  completedAt: timestamp("completedAt"),
+export const generationHistory = pgTable("generation_history", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  voiceProfileId: integer("voice_profile_id").notNull(),
+  inputText: text("input_text").notNull(),
+  audioUrl: text("audio_url").notNull(),
+  duration: integer("duration"),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
 });
 
 export type GenerationHistory = typeof generationHistory.$inferSelect;
 export type InsertGenerationHistory = typeof generationHistory.$inferInsert;
+
+/**
+ * Voice samples for reference
+ */
+export const voiceSamples = pgTable("voice_samples", {
+  id: serial("id").primaryKey(),
+  voiceProfileId: integer("voice_profile_id").notNull(),
+  sampleText: text("sample_text").notNull(),
+  audioUrl: text("audio_url").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type VoiceSample = typeof voiceSamples.$inferSelect;
+export type InsertVoiceSample = typeof voiceSamples.$inferInsert;
