@@ -1,153 +1,130 @@
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-const express = require("express");
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
+import express from "express";
+import cors from "cors";
+import { TextToSpeechClient } from "@google-cloud/text-to-speech";
+import postgres from "postgres";
 
 // Initialize Firebase Admin
 admin.initializeApp();
 
-// Create Express app
-const app = express();
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// CORS middleware
-app.use((req: any, res: any, next: any) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  if (req.method === "OPTIONS") {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
+// Initialize Google TTS Client
+const ttsClient = new TextToSpeechClient({
+  keyFilename: "./google-cloud-key.json",
 });
 
+// Database connection
+const sql = postgres("postgresql://postgres:D@lveer@123@db.cdvrstytwgxxkqnmckdz.supabase.co:5432/postgres");
+
+const app = express();
+app.use(cors({ origin: true }));
+app.use(express.json());
+
 // Health check
-app.get("/health", (req: any, res: any) => {
+app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Mock voice profiles endpoint
-app.get("/api/trpc/voice.getAllProfiles", (req: any, res: any) => {
-  res.json({
-    result: {
-      data: [
-        {
-          id: 1,
-          name: "Alex - US Young",
-          accent: "US",
-          gender: "male",
-          voiceType: "young",
-          avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-1_1771770678000_na1fn_YXZhdGFyLXVzLW1hbGUteW91bmcu.png",
-          description: "Friendly and energetic young American voice",
-        },
-        {
-          id: 2,
-          name: "Emma - US Professional",
-          accent: "US",
-          gender: "female",
+// Get all voice profiles
+app.get("/api/trpc/voice.getAllProfiles", async (req, res) => {
+  try {
+    const profiles = await sql`SELECT * FROM voice_profiles`;
+    res.json({
+      result: {
+        data: profiles.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description,
+          languageCode: p.language_code,
+          ssmlGender: p.ssml_gender,
+          sampleAudioUrl: p.sample_audio_url,
+          accent: p.language_code.split('-')[1],
+          gender: p.ssml_gender.toLowerCase(),
           voiceType: "professional",
-          avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-2_1771770682000_na1fn_YXZhdGFyLXVzLWZlbWFsZS1wcm9mZXNzaW9uYWw.png",
-          description: "Professional and confident American voice",
-        },
-        {
-          id: 3,
-          name: "James - UK Mature",
-          accent: "UK",
-          gender: "male",
-          voiceType: "mature",
-          avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-3_1771770681000_na1fn_YXZhdGFyLXVrLW1hbGUtbWF0dXJl.png",
-          description: "Sophisticated and distinguished British voice",
-        },
-        {
-          id: 4,
-          name: "Sophie - UK Casual",
-          accent: "UK",
-          gender: "female",
-          voiceType: "casual",
-          avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-4_1771770682000_na1fn_YXZhdGFyLXVrLWZlbWFsZS1jYXN1YWw.png",
-          description: "Friendly and approachable British voice",
-        },
-        {
-          id: 5,
-          name: "Liam - Australian Casual",
-          accent: "Australian",
-          gender: "male",
-          voiceType: "casual",
-          avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-5_1771770680000_na1fn_YXZhdGFyLWF1c3RyYWxpYW4tbWFsZS1jYXN1YWw.png",
-          description: "Relaxed and friendly Australian voice",
-        },
-        {
-          id: 6,
-          name: "Priya - Indian Professional",
-          accent: "Indian",
-          gender: "female",
-          voiceType: "professional",
-          avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/TC9UdSj0Guxl93g4Vj2L2q-img-1_1771770709000_na1fn_YXZhdGFyLWluZGlhbi1mZW1hbGUtcHJvZmVzc2lvbmFs.png",
-          description: "Professional and articulate Indian voice",
-        },
-        {
-          id: 7,
-          name: "Casey - Non-binary Young",
-          accent: "US",
-          gender: "non-binary",
-          voiceType: "young",
-          avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/TC9UdSj0Guxl93g4Vj2L2q-img-2_1771770709000_na1fn_YXZhdGFyLW5vbmJpbmFyeS15b3VuZw.png",
-          description: "Contemporary and inclusive voice",
-        },
-      ],
-    },
-  });
+          avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=random`
+        }))
+      }
+    });
+  } catch (error: any) {
+    console.error("Error fetching profiles:", error);
+    res.status(500).json({ error: { message: error.message } });
+  }
 });
 
 // Session initialization
-app.post("/api/trpc/voice.initSession", (req: any, res: any) => {
-  const sessionToken = "session_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-  res.json({
-    result: {
-      data: {
-        sessionToken,
-      },
-    },
-  });
+app.post("/api/trpc/voice.initSession", async (req, res) => {
+  try {
+    const sessionToken = "session_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+    // In a real app, you'd save this to the DB. For now, we'll just return it.
+    res.json({
+      result: {
+        data: { sessionToken }
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: { message: error.message } });
+  }
 });
 
-// Get session info
-app.post("/api/trpc/voice.getSession", (req: any, res: any) => {
-  res.json({
-    result: {
-      data: {
-        id: 1,
-        generationCount: 0,
-        remainingGenerations: 2,
-        canGenerate: true,
+// Generate voice
+app.post("/api/trpc/voice.generate", async (req, res) => {
+  try {
+    const { text, voiceProfileId } = req.body.json;
+
+    // 1. Get voice profile from DB
+    const [profile] = await sql`SELECT * FROM voice_profiles WHERE id = ${voiceProfileId}`;
+    if (!profile) {
+      return res.status(404).json({ error: { message: "Voice profile not found" } });
+    }
+
+    // 2. Call Google TTS
+    const [response] = await ttsClient.synthesizeSpeech({
+      input: { text },
+      voice: {
+        languageCode: profile.language_code,
+        ssmlGender: profile.ssml_gender,
+        name: profile.tts_voice_id || undefined
       },
-    },
-  });
+      audioConfig: { audioEncoding: "MP3" },
+    });
+
+    const audioContent = response.audioContent;
+    if (!audioContent) {
+      throw new Error("Failed to generate audio content");
+    }
+
+    // 3. Upload to Firebase Storage
+    const bucket = admin.storage().bucket();
+    const fileName = `generations/${Date.now()}.mp3`;
+    const file = bucket.file(fileName);
+    
+    await file.save(Buffer.from(audioContent as Uint8Array), {
+      metadata: { contentType: "audio/mpeg" }
+    });
+
+    // Make file public
+    await file.makePublic();
+    const audioUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+
+    // 4. Save to generation history
+    await sql`
+      INSERT INTO generation_history (voice_profile_id, input_text, audio_url)
+      VALUES (${voiceProfileId}, ${text}, ${audioUrl})
+    `;
+
+    res.json({
+      result: {
+        data: {
+          success: true,
+          audioUrl,
+          voiceProfile: profile
+        }
+      }
+    });
+  } catch (error: any) {
+    console.error("Generation error:", error);
+    res.status(500).json({ error: { message: error.message } });
+  }
 });
 
-// Generate voice (mock)
-app.post("/api/trpc/voice.generate", (req: any, res: any) => {
-  const mockAudioUrl = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
-  res.json({
-    result: {
-      data: {
-        success: true,
-        audioUrl: mockAudioUrl,
-        voiceProfile: {
-          id: 1,
-          name: "Alex - US Young",
-          accent: "US",
-          gender: "male",
-          voiceType: "young",
-          avatarUrl: "https://private-us-east-1.manuscdn.com/sessionFile/OoWlj0YQ06ufsiBUe8NVUB/sandbox/MycS8b1Rygga3ACV4fJK8M-img-1_1771770678000_na1fn_YXZhdGFyLXVzLW1hbGUteW91bmcu.png",
-        },
-      },
-    },
-  });
-});
-
-// Export as Cloud Function
-exports.api = functions.https.onRequest(app);
+export const api = functions.https.onRequest(app);
